@@ -8,6 +8,5 @@
   "requires": [],
   "optional": [],
   "js": "script.js",
-  "css": "style.css",
-  "settings_html": "settings.html"
+  "css": "style.css"
 }
