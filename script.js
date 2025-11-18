@@ -1,33 +1,32 @@
-// script.js (现代化版本)
+// script.js (再次修改版)
 
-// 导入SillyTavern的API模块
-// 注意：路径现在是 '../../script.js'，这是SillyTavern插件加载器推荐的相对路径
 import { SillyTavern, api, extension_settings, getContext, saveSettingsDebounced } from '../../script.js';
 
-// 插件名称，需要和文件夹名一致
 const extensionName = "content-optimizer";
 
-// 默认设置
 const defaultSettings = {
     optimizer_enabled: false,
-    optimizer_endpoint: 'https://api.openai.com/v1/chat/completions', // 默认使用OpenAI格式
+    optimizer_endpoint: 'https://api.openai.com/v1/chat/completions',
     optimizer_apiKey: '',
     optimizer_prompt: '请将以下文本进行润色和优化，使其表达更流畅、更生动。原始文本：\n\n{{text}}',
 };
 
-// 【重要】设置加载和UI绑定的函数
 async function setup() {
-    // 确保设置对象存在
     extension_settings[extensionName] = extension_settings[extensionName] || {};
-    // 将默认设置与保存的设置合并，这样可以平滑地添加新设置项
     Object.assign(defaultSettings, extension_settings[extensionName]);
     extension_settings[extensionName] = defaultSettings;
 
-    // 将设置面板的HTML加载到指定的DOM元素中
     const settingsHtml = await $.get(`/extensions/${extensionName}/settings.html`);
     $("#extensions_settings").append(settingsHtml);
 
-    // 绑定UI事件
+    // 【关键修改】 在HTML插入后，手动将设置值填充到UI元素中
+    const settings = extension_settings[extensionName];
+    $('#optimizer_enabled').prop('checked', settings.optimizer_enabled);
+    $('#optimizer_endpoint').val(settings.optimizer_endpoint);
+    $('#optimizer_apiKey').val(settings.optimizer_apiKey);
+    $('#optimizer_prompt').val(settings.optimizer_prompt);
+
+    // 绑定UI事件 (这部分逻辑不变)
     $('#optimizer_enabled').on('change', function() {
         extension_settings[extensionName].optimizer_enabled = $(this).is(':checked');
         saveSettingsDebounced();
@@ -41,15 +40,17 @@ async function setup() {
         saveSettingsDebounced();
     });
     $('#optimizer_prompt').on('input', function() {
-        extension_settings[extensionName].optimizer_prompt = $(this).val();
+        extension_s_settings[extensionName].optimizer_prompt = $(this).val();
         saveSettingsDebounced();
     });
 }
 
-// 核心功能：调用优化API (这部分代码无需改动)
+// ... onResponse 和 callOptimizationAPI 函数保持不变 ...
+// (为了简洁，这里省略，请使用上一版本中的代码)
+
 async function callOptimizationAPI(textToOptimize) {
+    // (此处代码不变)
     const settings = extension_settings[extensionName];
-    // ... (此处省略与原版完全相同的代码)
     const endpoint = settings.optimizer_endpoint;
     const apiKey = settings.optimizer_apiKey;
     const promptTemplate = settings.optimizer_prompt;
@@ -94,8 +95,8 @@ async function callOptimizationAPI(textToOptimize) {
     }
 }
 
-// 核心功能：onResponse钩子 (这部分代码无需改动)
 async function onResponse(response) {
+    // (此处代码不变)
     const settings = extension_settings[extensionName];
 
     if (!settings.optimizer_enabled || !response.text) {
@@ -116,18 +117,14 @@ async function onResponse(response) {
 
     const optimizedContent = await callOptimizationAPI(originalContent);
     
-    // 【重要】现代SillyTavern的onResponse钩子返回的是一个完整的response对象
-    // 我们需要修改这个对象的 .text 属性
     response.text = response.text.replace(originalBlock, optimizedContent);
 
     return response;
 }
 
-// 【关键】使用SillyTavern的官方API注册插件
 SillyTavern.extensionapi.registerExtension({
     name: extensionName,
-    // onResponse钩子现在在这里注册
     onResponse: onResponse,
-    // setup函数会在SillyTavern准备好后被调用，用于加载UI和设置
     setup: setup,
 });
+
