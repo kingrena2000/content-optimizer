@@ -1,10 +1,11 @@
-// script.js (最终结构重写 + 超级调试版)
+// script.js (最终兼容旧版 + 超级调试版)
+
+// 注意：我们不再从 '../../script.js' 导入任何东西，因为那可能是新版才有的特性。
+// 我们依赖最原始的、SillyTavern全局加载的模块。
+// 如果 extension_settings 和 saveSettingsDebounced 存在，它们应该是全局变量。
 
 try {
-    // 【新】使用SillyTavern的官方API，导入路径也使用官方推荐的
-    const { SillyTavern, extension_settings, saveSettingsDebounced } = await import('../../script.js');
-
-    console.log('[Content Optimizer] DEBUG: 核心模块导入成功。');
+    console.log('[Content Optimizer] DEBUG: script.js 文件加载。');
 
     const extensionName = "content-optimizer";
 
@@ -64,44 +65,15 @@ try {
     </div>
     `;
 
-    // 【新】UI和设置的初始化函数
-    async function setup() {
-        console.log('[Content Optimizer] DEBUG: setup() 函数被SillyTavern调用。');
-
-        extension_settings[extensionName] = extension_settings[extensionName] || {};
-        extension_settings[extensionName] = Object.assign({}, defaultSettings, extension_settings[extensionName]);
-        
-        $("#extensions_settings").append(settingsHtmlString);
-
-        const settings = extension_settings[extensionName];
-        $('#optimizer_enabled').prop('checked', settings.optimizer_enabled);
-        $('#optimizer_baseUrl').val(settings.optimizer_baseUrl);
-        $('#optimizer_apiKey').val(settings.optimizer_apiKey);
-        $('#optimizer_model').val(settings.optimizer_model);
-        $('#optimizer_prompt').val(settings.optimizer_prompt);
-        $('#optimizer_startTag').val(settings.optimizer_startTag);
-        $('#optimizer_endTag').val(settings.optimizer_endTag);
-        $('#optimizer_addMarker').prop('checked', settings.optimizer_addMarker);
-
-        $('.content-optimizer-settings').on('change input', 'input, textarea', function() {
-            const id = $(this).attr('id');
-            const value = $(this).is(':checkbox') ? $(this).is(':checked') : $(this).val();
-            extension_settings[extensionName][id] = value;
-            saveSettingsDebounced();
-        });
-        
-        console.log('[Content Optimizer] ★★★ UI和设置初始化完成！★★★');
-    }
-
     // 调用外部API的函数 (保持不变)
     async function callOptimizationAPI(textToOptimize) {
-        // ... (此处代码省略，与上一版完全相同)
+        // ... (代码省略，与上几版完全相同)
         const settings = extension_settings[extensionName];
         let baseUrl = settings.optimizer_baseUrl;
         const apiKey = settings.optimizer_apiKey;
         const model = settings.optimizer_model;
         const promptTemplate = settings.optimizer_prompt;
-        if (!baseUrl || !apiKey || !model) { return textToOptimize; }
+        if (!baseUrl || !apiKey || !model) { console.warn("[Content Optimizer] API基础URL、API key或模型名称未配置。"); return textToOptimize; }
         if (baseUrl.endsWith('/')) { baseUrl = baseUrl.slice(0, -1); }
         const endpoint = `${baseUrl}/v1/chat/completions`;
         const fullPrompt = promptTemplate.replace('{{text}}', textToOptimize);
@@ -116,14 +88,16 @@ try {
     }
 
     // “超级调试”版的 onResponse 函数 (保持不变)
-    async function onResponse(response) {
-        // ... (此处代码省略，与上一版完全相同，包含所有诊断日志)
+    async function onResponse(event, response) {
+        // 【重要】 事件监听器现在接收两个参数: event 和 response
+        // 我们只关心第二个参数 response
+        
         console.groupCollapsed(`--- 内容优化插件诊断 @ ${new Date().toLocaleTimeString()} ---`);
         try {
             const settings = extension_settings[extensionName];
             if (!settings.optimizer_enabled) { console.log("诊断结果: 插件未启用。函数提前退出。"); return; }
             console.log("✅ 诊断点 1: 插件已启用。");
-            if (!response.text) { console.log("诊断结果: AI的回复文本为空。函数提前退出。"); return; }
+            if (!response || !response.text) { console.log("诊断结果: AI的回复对象或文本为空。函数提前退出。"); return; }
             console.log("✅ 诊断点 2: AI回复文本存在。"); console.log("--- 完整AI回复 ---"); console.log(response.text); console.log("--------------------");
             const startTag = settings.optimizer_startTag; const endTag = settings.optimizer_endTag;
             if (!startTag || !endTag) { console.log("诊断结果: 正文提取的开始或结束标签未在设置中填写。函数提前退出。"); return; }
@@ -148,14 +122,50 @@ try {
         } finally { console.groupEnd(); }
     }
 
-    // 【【【 核心：使用官方API注册插件 】】】
-    SillyTavern.extensionapi.registerExtension({
-        name: extensionName,
-        onResponse: onResponse,
-        setup: setup,
-    });
+    // 【【【 核心：使用最兼容的jQuery方式初始化和监听 】】】
+    $(document).ready(function () {
+        console.log('[Content Optimizer] DEBUG: document.ready 事件触发。');
+        
+        // 1. 初始化设置
+        extension_settings[extensionName] = extension_settings[extensionName] || {};
+        // 合并默认设置，以防老用户缺少新设置项
+        Object.keys(defaultSettings).forEach(key => {
+            if (extension_settings[extensionName][key] === undefined) {
+                extension_settings[extensionName][key] = defaultSettings[key];
+            }
+        });
+        
+        // 2. 加载UI
+        $("#extensions_settings").append(settingsHtmlString);
 
-    console.log(`[Content Optimizer] 插件 '${extensionName}' 已通过官方API成功注册。`);
+        // 3. 填充UI
+        const settings = extension_settings[extensionName];
+        $('#optimizer_enabled').prop('checked', settings.optimizer_enabled);
+        $('#optimizer_baseUrl').val(settings.optimizer_baseUrl);
+        $('#optimizer_apiKey').val(settings.optimizer_apiKey);
+        $('#optimizer_model').val(settings.optimizer_model);
+        $('#optimizer_prompt').val(settings.optimizer_prompt);
+        $('#optimizer_startTag').val(settings.optimizer_startTag);
+        $('#optimizer_endTag').val(settings.optimizer_endTag);
+        $('#optimizer_addMarker').prop('checked', settings.optimizer_addMarker);
+
+        // 4. 绑定UI事件
+        $('.content-optimizer-settings').on('change input', 'input, textarea', function() {
+            const id = $(this).attr('id');
+            const value = $(this).is(':checkbox') ? $(this).is(':checked') : $(this).val();
+            extension_settings[extensionName][id] = value;
+            // 确保 saveSettingsDebounced 是全局可用的
+            if (typeof saveSettingsDebounced === 'function') {
+                saveSettingsDebounced();
+            }
+        });
+        
+        console.log('[Content Optimizer] ★★★ UI和设置初始化完成！★★★');
+
+        // 5. 注册事件监听器
+        $(document).on('response', onResponse);
+        console.log('[Content Optimizer] DEBUG: 已通过 $(document).on 注册 response 事件监听器。');
+    });
 
 } catch (error) {
     console.error('[Content Optimizer] XXX 插件加载失败，这是最顶层的错误！ XXX', error);
