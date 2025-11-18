@@ -1,5 +1,8 @@
 {
-  "name": "Content Optimizer",
+  "display_name": "ContentOptimizer",
+  "loading_order":5000
+  "requires":[],
+  "optional":[],
   "author": "kingrena2000",
   "description": "Optimizes AI responses using a second API call.",
   "version": "1.0.0",
