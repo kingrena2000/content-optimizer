@@ -1,0 +1,10 @@
+{
+  "name": "Content Optimizer",
+  "author": "kingrena2000",
+  "description": "Optimizes AI responses using a second API call.",
+  "version": "1.0.0",
+  "tags": ["utility", "api"],
+  "script": "script.js",
+  "style": "style.css",
+  "settings": "settings.html"
+}
