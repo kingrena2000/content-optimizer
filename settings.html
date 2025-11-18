@@ -1,0 +1,26 @@
+<!-- settings.html -->
+<div class="content-optimizer-settings">
+    <h4>内容优化插件 (Content Optimizer)</h4>
+
+    <div class="inline-group">
+        <label for="optimizer_enabled">启用插件</label>
+        <input id="optimizer_enabled" type="checkbox" {{settings.optimizer_enabled ? 'checked' : ''}}>
+    </div>
+
+    <hr>
+
+    <label for="optimizer_endpoint">优化API端点 (Endpoint)</label>
+    <input id="optimizer_endpoint" class="text_pole" type="text" value="{{settings.optimizer_endpoint}}">
+
+    <label for="optimizer_apiKey">优化API密钥 (API Key)</label>
+    <input id="optimizer_apiKey" class="text_pole" type="password" value="{{settings.optimizer_apiKey}}">
+    <small>如果API需要，请填写。例如 "Bearer sk-..."</small>
+
+    <label for="optimizer_prompt">优化提示词 (Optimization Prompt)</label>
+    <textarea id="optimizer_prompt" class="text_pole" rows="6">{{settings.optimizer_prompt}}</textarea>
+    <small>
+        这是发送给优化API的指令。你可以使用占位符 `{{text}}` 来代表需要优化的内容。<br>
+        例如：请将以下段落进行润色，使其更具文学性，同时保持原意。段落：{{text}}
+    </small>
+
+</div>
