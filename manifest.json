@@ -2,7 +2,7 @@
   "name": "content-optimizer",
   "display_name": "内容优化插件",
   "author": "kingrena2000",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "使用第二个API调用来优化AI的回复内容。",
   "tags": ["utility", "api"],
   "requires": [],
